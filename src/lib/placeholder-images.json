@@ -1,0 +1,29 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "volunteer-1",
+      "description": "Avatar for Alice Johnson",
+      "imageUrl": "https://picsum.photos/seed/v1/40/40",
+      "imageHint": "person"
+    },
+    {
+      "id": "volunteer-2",
+      "description": "Avatar for Bob Williams",
+      "imageUrl": "https://picsum.photos/seed/v2/40/40",
+      "imageHint": "person"
+    },
+    {
+      "id": "volunteer-3",
+      "description": "Avatar for Charlie Brown",
+      "imageUrl": "https://picsum.photos/seed/v3/40/40",
+      "imageHint": "person"
+    },
+    {
+      "id": "volunteer-4",
+      "description": "Avatar for Diana Prince",
+      "imageUrl": "https://picsum.photos/seed/v4/40/40",
+      "imageHint": "person"
+    }
+  ]
+}
