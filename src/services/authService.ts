@@ -10,7 +10,7 @@ export interface LoginResponse {
     success: boolean;
     message: string;
     data: {
-        access_token: string;
+        accessToken: string;
         refreshToken?: string;
         user: {
             id: number;
@@ -23,6 +23,6 @@ export interface LoginResponse {
 export const loginApi = async (
     payload: LoginPayload
 ): Promise<LoginResponse> => {
-    const { data } = await axiosInstance.post<LoginResponse>("/admin/login", payload);
+    const { data } = await axiosInstance.post<LoginResponse>("/admin/auth/adminLogin", payload);
     return data;
 };

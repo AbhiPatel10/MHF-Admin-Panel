@@ -25,7 +25,7 @@ export default function LoginPage() {
     try {
       const response = await loginApi({ email, password });
       // Save token securely
-      localStorage.setItem("accessToken", response.data.access_token);
+      localStorage.setItem("accessToken", response.data.accessToken);
       if (response.data.refreshToken) {
         localStorage.setItem("refreshToken", response.data.refreshToken);
       }
