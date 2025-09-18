@@ -31,15 +31,20 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon, Save, Upload } from 'lucide-react';
+import { CalendarIcon, Loader2, Save, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
+import { createVolunteerApi, getVolunteerByIdApi, updateVolunteerApi } from '@/services/volunteerService';
+import { uploadImageApi } from '@/services/image.service';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  address: z.string().min(5, { message: 'Please enter a valid address.' }),
-  bloodGroup: z.string().min(1, { message: 'Please select a blood group.' }),
+  bloodGroup: z.string().optional(),
+  city: z.string().min(2, { message: 'City is required.' }),
+  state: z.string().min(2, { message: 'State is required.' }),
+  postalCode: z.string().min(6, { message: 'Postal code is required.' }),
+  phoneNo: z.string().min(10, { message: 'Phone number is required.' }),
   birthdate: z.date().optional(),
   occupation: z
     .string()
@@ -48,29 +53,121 @@ const formSchema = z.object({
   photo: z.any().optional(),
 });
 
-export function AddVolunteerForm() {
+interface AddVolunteerFormProps {
+  id?: string;
+}
+
+export function AddVolunteerForm({ id }: AddVolunteerFormProps) {
   const { toast } = useToast();
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const isEdit = !!id;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      address: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      phoneNo: '',
+      birthdate: undefined,
       bloodGroup: '',
       occupation: '',
       skills: '',
+      photo: undefined,
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: 'Volunteer Added!',
-      description: `${values.name} has been successfully added to the team.`,
-    });
-    form.reset();
-    setPhotoPreview(null);
+  // Prefill form if editing
+  React.useEffect(() => {
+    if (!isEdit) return;
+
+    const fetchVolunteer = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getVolunteerByIdApi(id!);
+        if (res.status === 200) {
+          const data = res.data;
+          form.setValue('name', data.name);
+          form.setValue('city', data.address?.city || '');
+          form.setValue('state', data.address?.state || '');
+          form.setValue('postalCode', data.address?.postalCode || '');
+          form.setValue('phoneNo', data.phoneNo);
+          form.setValue('birthdate', data.birthdate ? new Date(data.birthdate) : undefined);
+          form.setValue('bloodGroup', data.bloodGroup || '');
+          form.setValue('occupation', data.occupation);
+          form.setValue('skills', data.skills?.[0] || '');
+          if (data.image?.url) setPhotoPreview(data.image.url);
+        }
+      } catch (err: any) {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to fetch volunteer',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVolunteer();
+  }, [id, isEdit, form, toast]);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    let imageId: string | undefined;
+
+    if (values.photo instanceof File) {
+      const uploadRes = await uploadImageApi(values.photo);
+      imageId = uploadRes.data._id;
+    }
+
+    const payload = {
+      ...(imageId && { image: imageId }),
+      name: values.name,
+      address: {
+        city: values.city,
+        state: values.state,
+        postalCode: values.postalCode,
+      },
+      phoneNo: values.phoneNo,
+      bloodGroup: values.bloodGroup ?? '',
+      birthdate: values.birthdate,
+      occupation: values.occupation,
+      skills: [values.skills ?? ''],
+    };
+
+    try {
+      const res = isEdit
+        ? await updateVolunteerApi(id!, payload)
+        : await createVolunteerApi(payload);
+
+      if (res.status === 200) {
+        toast({
+          title: isEdit ? 'Volunteer Updated!' : 'Volunteer Added!',
+          description: res.message || `${values.name} has been ${isEdit ? 'updated' : 'added'}.`,
+        });
+        if (!isEdit) {
+          form.reset();
+          setPhotoPreview(null);
+        }
+      } else {
+        toast({
+          title: 'Error',
+          description: res.message || 'Operation failed',
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Something went wrong',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,19 +221,37 @@ export function AddVolunteerForm() {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
+            <div className="grid gap-6 md:grid-cols-3">
+              <FormField control={form.control} name="city" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address*</FormLabel>
+                  <FormLabel>City*</FormLabel>
                   <FormControl>
-                    <Input placeholder="City, State, Postal Code" {...field} />
+                    <Input placeholder="Enter city" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
+              )} />
+
+              <FormField control={form.control} name="state" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>State*</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter state" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="postalCode" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Postal Code*</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter postal code" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
             <div className="grid gap-6 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -146,7 +261,7 @@ export function AddVolunteerForm() {
                     <FormLabel>Blood Group*</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      defaultValue={field.value || ""}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -209,6 +324,19 @@ export function AddVolunteerForm() {
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="phoneNo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number*</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter phone number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <div className="space-y-4">
@@ -271,9 +399,13 @@ export function AddVolunteerForm() {
           )}
         />
         <div className="flex justify-end">
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
-            Save Volunteer
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {isLoading ? 'Saving...' : isEdit ? 'Update Volunteer' : 'Save Volunteer'}
           </Button>
         </div>
       </form>

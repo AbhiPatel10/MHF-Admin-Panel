@@ -49,6 +49,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    router.push('/');
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -123,7 +128,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/')}>
+                <DropdownMenuItem onClick={() => handleLogout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

@@ -3,7 +3,9 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddVolunteerForm } from './add-volunteer-form';
 
-export default function NewVolunteerPage() {
+export default function NewVolunteerPage({ params }: { params: { slug: string } }) {
+
+  console.log(params)
   return (
     <AppLayout>
       <main className="p-4 md:p-6">

@@ -13,10 +13,9 @@ export default function AuthGuard({ children, requireAuth = true }: AuthGuardPro
 
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
-        console.log("token---,,,", token);
         if (requireAuth && !token) {
             // Private route but no token → redirect to login
-            router.replace("/login");
+            router.replace("/");
         }
 
         if (!requireAuth && token) {
