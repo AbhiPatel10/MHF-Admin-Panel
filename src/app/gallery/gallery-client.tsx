@@ -4,44 +4,21 @@ import * as React from 'react';
 import Image from 'next/image';
 import { GalleryImage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Upload, Edit } from 'lucide-react';
+import { PlusCircle, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardDescription } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import { GalleryImageFormDialog } from './GalleryImageFormDialog';
+import { GalleryImageDeleteDialog } from './GalleryImageDeleteDialog';
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { addImageToGalleryApi, deleteGalleryImageApi, getAllGalleryImagesApi, updateGalleryImageApi } from '@/services/galleryService';
+import { uploadImageApi } from '@/services/image.service';
 
 const IMAGES_PER_PAGE = 8;
 
-export function GalleryClient({ images: initialImages }: { images: GalleryImage[] }) {
-  const [images, setImages] = React.useState<GalleryImage[]>(initialImages);
+export function GalleryClient() {
+  const [images, setImages] = React.useState<GalleryImage[]>([]);
+  const [totalCount, setTotalCount] = React.useState(0);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [imageToDelete, setImageToDelete] = React.useState<GalleryImage | null>(null);
   const [editingImage, setEditingImage] = React.useState<GalleryImage | null>(null);
@@ -54,11 +31,30 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
   const [currentPage, setCurrentPage] = React.useState(1);
   const { toast } = useToast();
 
-  const totalPages = Math.ceil(images.length / IMAGES_PER_PAGE);
-  const paginatedImages = images.slice(
-    (currentPage - 1) * IMAGES_PER_PAGE,
-    currentPage * IMAGES_PER_PAGE
-  );
+  const totalPages = Math.ceil(totalCount / IMAGES_PER_PAGE);
+
+  // 🔹 Fetch gallery images with pagination
+  const fetchGalleryImages = async (page: number = 1) => {
+    try {
+      const offset = (page - 1) * IMAGES_PER_PAGE;
+      const { data, status } = await getAllGalleryImagesApi(offset, IMAGES_PER_PAGE);
+      if (status === 200) {
+        setImages(data.images);
+        setTotalCount(data.totalCount);
+      }
+    } catch (error) {
+      console.error('Error fetching gallery images:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load gallery images.',
+      });
+    }
+  };
+
+  React.useEffect(() => {
+    fetchGalleryImages(currentPage);
+  }, [currentPage]);
 
   const resetForm = () => {
     setEditingImage(null);
@@ -79,7 +75,7 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
     }
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = async () => {
     if (!formData.description || (!formData.file && !editingImage)) {
       toast({
         variant: 'destructive',
@@ -89,47 +85,79 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
       return;
     }
 
-    if (editingImage) {
-      // Update existing image
-      const updatedImages = images.map((img) =>
-        img.id === editingImage.id
-          ? {
-              ...img,
-              description: formData.description,
-              url: formData.file ? URL.createObjectURL(formData.file) : img.url,
-            }
-          : img
-      );
-      setImages(updatedImages);
+    try {
+      let imageId: string | undefined;
+      let imageUrl: string | undefined;
+
+      if (formData.file) {
+        const uploadRes = await uploadImageApi(formData.file);
+        imageId = uploadRes.data._id;
+        imageUrl = uploadRes.data.url; // assuming backend returns url
+      }
+
+      if (editingImage) {
+        // call update API
+        const payload = {
+          imageDescription: formData.description,
+          altText: "",
+          ...(imageId && { image: imageId }),
+        };
+
+        const res = await updateGalleryImageApi(editingImage.id, payload);
+
+        if (res.status === 200) {
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === editingImage.id
+                ? { ...img, description: payload.imageDescription, url: imageUrl ?? img.url }
+                : img
+            )
+          );
+          toast({ title: 'Image Updated', description: res.message });
+        }
+      } else {
+        const payload = {
+          imageDescription: formData.description,
+          altText: "",
+          image: imageId!,
+        };
+
+        const res = await addImageToGalleryApi(payload);
+
+        if (res.status === 200) {
+          fetchGalleryImages(currentPage);
+          toast({ title: 'Image Added', description: res.message });
+        }
+      }
+
+      resetForm();
+    } catch (err: any) {
       toast({
-        title: 'Image Updated',
-        description: 'The image details have been updated.',
-      });
-    } else {
-      // Add new image
-      const newImageObject: GalleryImage = {
-        id: (images.length + 1).toString(),
-        url: URL.createObjectURL(formData.file!),
-        description: formData.description,
-        uploaded: new Date().toISOString().split('T')[0],
-      };
-      setImages([newImageObject, ...images]);
-      toast({
-        title: 'Image Added',
-        description: 'The new image has been added to the gallery.',
+        title: 'Error',
+        description: err.message || 'Something went wrong',
+        variant: 'destructive',
       });
     }
-
-    resetForm();
   };
 
-  const handleDelete = (imageId: string) => {
-    setImages(images.filter((img) => img.id !== imageId));
-    setImageToDelete(null);
-    toast({
-      title: 'Image Deleted',
-      description: 'The image has been removed from the gallery.',
-    });
+
+  const handleDelete = async (imageId: string) => {
+    try {
+      await deleteGalleryImageApi(imageId);
+      setImageToDelete(null);
+      toast({
+        title: 'Image Deleted',
+        description: 'The image has been removed from the gallery.',
+      });
+      fetchGalleryImages(currentPage);
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete image.',
+      });
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -160,7 +188,7 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {paginatedImages.map((image) => (
+        {images?.map((image) => (
           <Card
             key={image.id}
             className="group relative flex cursor-pointer flex-col overflow-hidden"
@@ -174,23 +202,27 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
                   width={600}
                   height={400}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  data-ai-hint="landscape"
                 />
               </div>
             </CardContent>
             <CardHeader className="flex-grow">
-              <CardDescription className="line-clamp-3 text-sm">{image.description}</CardDescription>
+              <CardDescription className="line-clamp-3 text-sm">
+                {image.description}
+              </CardDescription>
             </CardHeader>
             <CardFooter className="mt-auto flex justify-between p-4">
               <p className="text-xs text-muted-foreground">
                 {format(new Date(image.uploaded), 'PPP')}
               </p>
-              <div className='flex gap-2'>
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={(e) => { e.stopPropagation(); openEditDialog(image); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditDialog(image);
+                  }}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -198,7 +230,10 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
                   variant="destructive"
                   size="icon"
                   className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={(e) => { e.stopPropagation(); setImageToDelete(image); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImageToDelete(image);
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -240,77 +275,26 @@ export function GalleryClient({ images: initialImages }: { images: GalleryImage[
         </Pagination>
       </div>
 
-      <Dialog open={isFormOpen} onOpenChange={(isOpen) => !isOpen && resetForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingImage ? 'Edit Image' : 'Add New Image'}</DialogTitle>
-            <DialogDescription>
-              {editingImage ? 'Update the image or its description.' : 'Upload an image to your gallery.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="A brief description of the image."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="image-file">Image File</Label>
-              <Card className="flex h-48 items-center justify-center border-dashed">
-                {previewUrl ? (
-                  <div className="relative h-full w-full">
-                    <Image
-                      src={previewUrl}
-                      alt="Image preview"
-                      fill
-                      className="rounded-md object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    <Upload className="mx-auto h-12 w-12" />
-                    <p>Image Preview</p>
-                  </div>
-                )}
-              </Card>
-              <Input id="image-file" type="file" accept="image/*" onChange={handleFileChange} />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleFormSubmit}>
-              {editingImage ? 'Save Changes' : 'Add to Gallery'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Form Dialog */}
+      <GalleryImageFormDialog
+        open={isFormOpen}
+        onOpenChange={(isOpen) => !isOpen && resetForm()}
+        formData={formData}
+        previewUrl={previewUrl}
+        editingImage={!!editingImage}
+        onDescriptionChange={(desc) =>
+          setFormData((prev) => ({ ...prev, description: desc }))
+        }
+        onFileChange={handleFileChange}
+        onSubmit={handleFormSubmit}
+      />
 
-      <AlertDialog open={!!imageToDelete} onOpenChange={(open) => !open && setImageToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the image from the
-              gallery.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleDelete(imageToDelete!.id)}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Dialog */}
+      <GalleryImageDeleteDialog
+        open={!!imageToDelete}
+        onOpenChange={(open) => !open && setImageToDelete(null)}
+        onConfirm={() => handleDelete(imageToDelete!.id)}
+      />
     </>
   );
 }

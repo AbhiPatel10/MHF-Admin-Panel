@@ -98,7 +98,6 @@ export function AddVolunteerForm({ id }: AddVolunteerFormProps) {
           form.setValue('bloodGroup', data.bloodGroup || '');
           form.setValue('occupation', data.occupation);
           form.setValue('skills', data.skills?.[0] || '');
-          console.log("data.image---", data.image)
           if (data.image?.url) setPhotoPreview(data.image.url);
         }
       } catch (err: any) {
