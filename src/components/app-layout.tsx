@@ -24,6 +24,7 @@ import {
   Newspaper,
   ChevronUp,
   FolderKanban,
+  Images,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -41,6 +42,7 @@ const navItems = [
   { href: '/blog', icon: Newspaper, label: 'Blog' },
   { href: '/volunteers', icon: Users, label: 'Volunteers' },
   { href: '/events', icon: Calendar, label: 'Events' },
+  { href: '/gallery', icon: Images, label: 'Gallery' },
   { href: '/categories', icon: FolderKanban, label: 'Categories' },
   { href: '/contacts', icon: Mail, label: 'Contacts' },
 ];

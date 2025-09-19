@@ -6,6 +6,15 @@ export type BlogPost = {
   status: 'Published' | 'Draft';
 };
 
+export type Volunteer = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  joined: string;
+  avatarUrl: string;
+};
+
 export type Event = {
   id: string;
   name: string;
@@ -25,4 +34,11 @@ export type Contact = {
 export type Category = {
   _id: string;
   name: string;
+};
+
+export type GalleryImage = {
+  id: string;
+  url: string;
+  description: string;
+  uploaded: string;
 };

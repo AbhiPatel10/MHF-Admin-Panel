@@ -1,4 +1,4 @@
-import { BlogPost, Volunteer, Event, Contact, Category } from './types';
+import { BlogPost, Volunteer, Event, Contact, Category, GalleryImage } from './types';
 
 export const blogPosts: BlogPost[] = [
   {
@@ -122,7 +122,7 @@ export const contacts: Contact[] = [
       "I have a background in event planning and logistics. I'd be happy to help organize or manage any upcoming fundraising events.",
     date: '2023-10-15',
   },
-    {
+  {
     id: '4',
     name: 'David Lee',
     email: 'david.lee@example.com',
@@ -134,19 +134,28 @@ export const contacts: Contact[] = [
 
 export const categories: Category[] = [
   {
-    id: '1',
+    _id: '1',
     name: 'Fundraising',
   },
   {
-    id: '2',
+    _id: '2',
     name: 'Community Outreach',
   },
   {
-    id: '3',
+    _id: '3',
     name: 'Education',
   },
-    {
-    id: '4',
+  {
+    _id: '4',
     name: 'Environmental',
   },
+];
+
+export const galleryImages: GalleryImage[] = [
+  { id: '1', url: 'https://picsum.photos/seed/img1/600/400', description: 'A sunny day at the grand opening of our new community garden.', uploaded: '2023-10-15' },
+  { id: '2', url: 'https://picsum.photos/seed/img2/600/400', description: 'Participants crossing the finish line at our 5k charity run.', uploaded: '2023-09-20' },
+  { id: '3', url: 'https://picsum.photos/seed/img3/600/400', description: 'Young minds at work during our weekend coding workshop.', uploaded: '2023-08-01' },
+  { id: '4', url: 'https://picsum.photos/seed/img4/600/400', description: 'Volunteers sorting donations during our annual food drive.', uploaded: '2023-07-25' },
+  { id: '5', url: 'https://picsum.photos/seed/img5/600/400', description: 'A memorable night of fundraising and celebration at our annual gala.', uploaded: '2023-06-10' },
+  { id: '6', url: 'https://picsum.photos/seed/img6/600/400', description: 'Celebrating the incredible people who make our work possible.', uploaded: '2023-05-30' },
 ];
