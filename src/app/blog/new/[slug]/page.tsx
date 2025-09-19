@@ -3,9 +3,15 @@
 import { AppLayout } from "@/components/app-layout";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import BlogForm from "./blog-form";
+import BlogForm from "../blog-form";
 
-export default function NewPostPage() {
+export default async function EditPostPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const { slug } = await params;
+
   return (
     <AppLayout>
       <main className="p-4 md:p-6">
@@ -19,7 +25,7 @@ export default function NewPostPage() {
               <CardTitle>Post Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <BlogForm />
+              <BlogForm id={slug} />
             </CardContent>
           </Card>
         </div>

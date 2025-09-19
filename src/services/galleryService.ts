@@ -22,9 +22,9 @@ export const addImageToGalleryApi = async (
 export const getAllGalleryImagesApi = async (
     offset: number = 0,
     limit: number = 10
-): Promise<ApiResponse<{ images: GalleryImage[]; totalCount: number }>> => {
+): Promise<ApiResponse<{ galleryImages: GalleryImage[]; totalCount: number }>> => {
     const { data } = await axiosInstance.get<
-        ApiResponse<{ images: GalleryImage[]; totalCount: number }>
+        ApiResponse<{ galleryImages: GalleryImage[]; totalCount: number }>
     >("/admin/gallery/getGalleryImages", {
         params: { offset, limit },
     });

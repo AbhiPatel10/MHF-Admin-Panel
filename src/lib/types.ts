@@ -36,9 +36,17 @@ export type Category = {
   name: string;
 };
 
-export type GalleryImage = {
-  id: string;
-  url: string;
-  description: string;
-  uploaded: string;
-};
+export interface GalleryImage {
+  _id: string
+  image: Image
+  altText: string
+  imageDescription: string
+  createdAt: string
+  updatedAt: string
+  __v: number
+}
+
+export interface Image {
+  _id: string
+  url: string
+}

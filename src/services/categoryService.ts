@@ -32,6 +32,18 @@ export const getAllCategoriesApi = async (
     return data;
 };
 
+// Get all active categories
+export const getAllActiveCategoriesApi = async (
+    search: string = ""
+): Promise<ApiResponse<{ categories: Category[]; totalCount: number }>> => {
+    const { data } = await axiosInstance.get<
+        ApiResponse<{ categories: Category[]; totalCount: number }>
+    >("/admin/category/getAllActiveCategories", {
+        params: { search },
+    });
+    return data;
+};
+
 // Get category details by ID
 export const getCategoryByIdApi = async (
     categoryId: string

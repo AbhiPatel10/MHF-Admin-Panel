@@ -1,18 +1,35 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Image from 'next/image';
-import { GalleryImage } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit } from 'lucide-react';
-import { Card, CardContent, CardFooter, CardHeader, CardDescription } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { GalleryImageFormDialog } from './GalleryImageFormDialog';
-import { GalleryImageDeleteDialog } from './GalleryImageDeleteDialog';
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { addImageToGalleryApi, deleteGalleryImageApi, getAllGalleryImagesApi, updateGalleryImageApi } from '@/services/galleryService';
-import { uploadImageApi } from '@/services/image.service';
+import * as React from "react";
+import Image from "next/image";
+import { GalleryImage } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { PlusCircle, Trash2, Edit } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardDescription,
+} from "@/components/ui/card";
+import { format } from "date-fns";
+import { GalleryImageFormDialog } from "./GalleryImageFormDialog";
+import { GalleryImageDeleteDialog } from "./GalleryImageDeleteDialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  addImageToGalleryApi,
+  deleteGalleryImageApi,
+  getAllGalleryImagesApi,
+  updateGalleryImageApi,
+} from "@/services/galleryService";
+import { uploadImageApi } from "@/services/image.service";
 
 const IMAGES_PER_PAGE = 8;
 
@@ -20,11 +37,18 @@ export function GalleryClient() {
   const [images, setImages] = React.useState<GalleryImage[]>([]);
   const [totalCount, setTotalCount] = React.useState(0);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [imageToDelete, setImageToDelete] = React.useState<GalleryImage | null>(null);
-  const [editingImage, setEditingImage] = React.useState<GalleryImage | null>(null);
+  const [imageToDelete, setImageToDelete] = React.useState<GalleryImage | null>(
+    null
+  );
+  const [editingImage, setEditingImage] = React.useState<GalleryImage | null>(
+    null
+  );
 
-  const [formData, setFormData] = React.useState<{ description: string; file: File | null }>({
-    description: '',
+  const [formData, setFormData] = React.useState<{
+    description: string;
+    file: File | null;
+  }>({
+    description: "",
     file: null,
   });
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -33,21 +57,25 @@ export function GalleryClient() {
 
   const totalPages = Math.ceil(totalCount / IMAGES_PER_PAGE);
 
+  console.log("---images", images);
   // 🔹 Fetch gallery images with pagination
   const fetchGalleryImages = async (page: number = 1) => {
     try {
       const offset = (page - 1) * IMAGES_PER_PAGE;
-      const { data, status } = await getAllGalleryImagesApi(offset, IMAGES_PER_PAGE);
+      const { data, status } = await getAllGalleryImagesApi(
+        offset,
+        IMAGES_PER_PAGE
+      );
       if (status === 200) {
-        setImages(data.images);
+        setImages(data.galleryImages);
         setTotalCount(data.totalCount);
       }
     } catch (error) {
-      console.error('Error fetching gallery images:', error);
+      console.error("Error fetching gallery images:", error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load gallery images.',
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load gallery images.",
       });
     }
   };
@@ -58,7 +86,7 @@ export function GalleryClient() {
 
   const resetForm = () => {
     setEditingImage(null);
-    setFormData({ description: '', file: null });
+    setFormData({ description: "", file: null });
     setPreviewUrl(null);
     setIsFormOpen(false);
   };
@@ -78,9 +106,9 @@ export function GalleryClient() {
   const handleFormSubmit = async () => {
     if (!formData.description || (!formData.file && !editingImage)) {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Image and description are required.',
+        variant: "destructive",
+        title: "Error",
+        description: "Image and description are required.",
       });
       return;
     }
@@ -103,17 +131,11 @@ export function GalleryClient() {
           ...(imageId && { image: imageId }),
         };
 
-        const res = await updateGalleryImageApi(editingImage.id, payload);
+        const res = await updateGalleryImageApi(editingImage._id, payload);
 
         if (res.status === 200) {
-          setImages((prev) =>
-            prev.map((img) =>
-              img.id === editingImage.id
-                ? { ...img, description: payload.imageDescription, url: imageUrl ?? img.url }
-                : img
-            )
-          );
-          toast({ title: 'Image Updated', description: res.message });
+          fetchGalleryImages(currentPage);
+          toast({ title: "Image Updated", description: res.message });
         }
       } else {
         const payload = {
@@ -126,36 +148,35 @@ export function GalleryClient() {
 
         if (res.status === 200) {
           fetchGalleryImages(currentPage);
-          toast({ title: 'Image Added', description: res.message });
+          toast({ title: "Image Added", description: res.message });
         }
       }
 
       resetForm();
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.message || 'Something went wrong',
-        variant: 'destructive',
+        title: "Error",
+        description: err.message || "Something went wrong",
+        variant: "destructive",
       });
     }
   };
-
 
   const handleDelete = async (imageId: string) => {
     try {
       await deleteGalleryImageApi(imageId);
       setImageToDelete(null);
       toast({
-        title: 'Image Deleted',
-        description: 'The image has been removed from the gallery.',
+        title: "Image Deleted",
+        description: "The image has been removed from the gallery.",
       });
       fetchGalleryImages(currentPage);
     } catch (error) {
-      console.error('Error deleting image:', error);
+      console.error("Error deleting image:", error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete image.',
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete image.",
       });
     }
   };
@@ -173,8 +194,8 @@ export function GalleryClient() {
 
   const openEditDialog = (image: GalleryImage) => {
     setEditingImage(image);
-    setFormData({ description: image.description, file: null });
-    setPreviewUrl(image.url);
+    setFormData({ description: image.imageDescription, file: null });
+    setPreviewUrl(image.image.url);
     setIsFormOpen(true);
   };
 
@@ -190,15 +211,15 @@ export function GalleryClient() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {images?.map((image) => (
           <Card
-            key={image.id}
+            key={image._id}
             className="group relative flex cursor-pointer flex-col overflow-hidden"
             onClick={() => openEditDialog(image)}
           >
             <CardContent className="p-0">
               <div className="aspect-video w-full">
                 <Image
-                  src={image.url}
-                  alt={image.description}
+                  src={image.image?.url}
+                  alt={image.imageDescription}
                   width={600}
                   height={400}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
@@ -207,12 +228,12 @@ export function GalleryClient() {
             </CardContent>
             <CardHeader className="flex-grow">
               <CardDescription className="line-clamp-3 text-sm">
-                {image.description}
+                {image.imageDescription}
               </CardDescription>
             </CardHeader>
             <CardFooter className="mt-auto flex justify-between p-4">
               <p className="text-xs text-muted-foreground">
-                {format(new Date(image.uploaded), 'PPP')}
+                {format(new Date(image?.createdAt), "PPP")}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -253,7 +274,9 @@ export function GalleryClient() {
                   e.preventDefault();
                   handlePageChange(currentPage - 1);
                 }}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                className={
+                  currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                }
               />
             </PaginationItem>
             <PaginationItem>
@@ -268,7 +291,11 @@ export function GalleryClient() {
                   e.preventDefault();
                   handlePageChange(currentPage + 1);
                 }}
-                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                className={
+                  currentPage === totalPages
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
               />
             </PaginationItem>
           </PaginationContent>
@@ -293,7 +320,7 @@ export function GalleryClient() {
       <GalleryImageDeleteDialog
         open={!!imageToDelete}
         onOpenChange={(open) => !open && setImageToDelete(null)}
-        onConfirm={() => handleDelete(imageToDelete!.id)}
+        onConfirm={() => handleDelete(imageToDelete!._id)}
       />
     </>
   );
