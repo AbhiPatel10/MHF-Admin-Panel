@@ -17,7 +17,13 @@ import InlineCode from '@editorjs/inline-code';
 import Marker from '@editorjs/marker';
 import Warning from '@editorjs/warning';
 
-export function EditorClient() {
+interface EditorClientProps {
+  value?: OutputData;
+  onChange?: (data: OutputData) => void;
+  isEdited?: boolean
+}
+
+export function EditorClient({ value, onChange, isEdited }: EditorClientProps) {
   const editorRef = useRef<EditorJS | null>(null);
   const editorContainerId = 'editorjs-container';
 
@@ -26,6 +32,7 @@ export function EditorClient() {
       const editor = new EditorJS({
         holder: editorContainerId,
         placeholder: "Let's write an awesome story!",
+        data: value, // preload if form has existing value
         tools: {
           header: Header,
           list: List,
@@ -45,9 +52,11 @@ export function EditorClient() {
           marker: Marker,
           warning: Warning,
         },
-        async onChange(api, event) {
+        async onChange(api) {
           const data = await api.saver.save();
-          console.log(data);
+          if (onChange) {
+            onChange(data); // send to react-hook-form
+          }
         },
       });
       editorRef.current = editor;
@@ -59,7 +68,7 @@ export function EditorClient() {
         editorRef.current = null;
       }
     };
-  }, []);
+  }, [isEdited]);
 
   return (
     <div

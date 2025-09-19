@@ -2,69 +2,59 @@
 
 import * as React from 'react';
 import type { Category } from '@/lib/types';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { CategoryDialog } from '@/components/CategoryDialog';
+import { createCategoryApi, deleteCategoryApi, getAllCategoriesApi, updateCategoryApi } from '@/services/categoryService';
 
-export function CategoriesClient({
-  categories: initialCategories,
-}: {
-  categories: Category[];
-}) {
-  const [categories, setCategories] =
-    React.useState<Category[]>(initialCategories);
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-  const [selectedCategory, setSelectedCategory] =
-    React.useState<Category | null>(null);
+export function CategoriesClient() {
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
   const [categoryName, setCategoryName] = React.useState('');
   const { toast } = useToast();
 
-  const handleDelete = (categoryId: string) => {
-    setCategories(categories.filter((cat) => cat.id !== categoryId));
-    toast({
-      title: 'Category Deleted',
-      description: 'The category has been successfully deleted.',
-    });
+  const fetchCategories = async () => {
+    try {
+      const res = await getAllCategoriesApi(0, 20);
+      setCategories(res.data.categories);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to fetch categories.',
+      });
+    }
   };
 
-  const handleAddCategory = () => {
+  React.useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // 🔹 Delete category
+  const handleDelete = async (categoryId: string) => {
+    try {
+      await deleteCategoryApi(categoryId);
+      toast({
+        title: 'Category Deleted',
+        description: 'The category has been successfully deleted.',
+      });
+      fetchCategories();
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete category.',
+      });
+    }
+  };
+
+  // 🔹 Add category
+  const handleAddCategory = async () => {
     if (!categoryName) {
       toast({
         variant: 'destructive',
@@ -73,20 +63,34 @@ export function CategoriesClient({
       });
       return;
     }
-    const newCategory: Category = {
-      id: (categories.length + 1).toString(),
-      name: categoryName,
-    };
-    setCategories([...categories, newCategory]);
-    setIsAddDialogOpen(false);
-    setCategoryName('');
-    toast({
-      title: 'Category Added',
-      description: 'The new category has been successfully added.',
-    });
+    try {
+      await createCategoryApi({ name: categoryName });
+      setIsDialogOpen(false);
+      setCategoryName('');
+      toast({
+        title: 'Category Added',
+        description: 'The new category has been successfully added.',
+      });
+      fetchCategories();
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to add category.',
+      });
+    }
   };
 
-  const handleEditCategory = () => {
+  const handleCategory = () => {
+    if (selectedCategory) {
+      handleEditCategory();
+    } else {
+      handleAddCategory();
+    }
+  }
+
+  // 🔹 Edit category
+  const handleEditCategory = async () => {
     if (!selectedCategory || !categoryName) {
       toast({
         variant: 'destructive',
@@ -95,32 +99,36 @@ export function CategoriesClient({
       });
       return;
     }
-    setCategories(
-      categories.map((cat) =>
-        cat.id === selectedCategory.id
-          ? { ...cat, name: categoryName }
-          : cat
-      )
-    );
-    setIsEditDialogOpen(false);
-    setSelectedCategory(null);
-    setCategoryName('');
-    toast({
-      title: 'Category Updated',
-      description: 'The category has been successfully updated.',
-    });
+    try {
+      console.log("selectedCategory---", selectedCategory)
+      await updateCategoryApi(selectedCategory._id, { name: categoryName });
+      setIsDialogOpen(false);
+      setSelectedCategory(null);
+      setCategoryName('');
+      toast({
+        title: 'Category Updated',
+        description: 'The category has been successfully updated.',
+      });
+      fetchCategories();
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update category.',
+      });
+    }
   };
 
   const openEditDialog = (category: Category) => {
     setSelectedCategory(category);
     setCategoryName(category.name);
-    setIsEditDialogOpen(true);
+    setIsDialogOpen(true);
   };
 
   return (
     <>
       <div className="flex justify-end pb-4">
-        <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)}>
           <PlusCircle className="mr-2" />
           Add Category
         </Button>
@@ -134,7 +142,7 @@ export function CategoriesClient({
         </TableHeader>
         <TableBody>
           {categories.map((category) => (
-            <TableRow key={category.id}>
+            <TableRow key={category._id}>
               <TableCell className="font-medium">{category.name}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -167,7 +175,7 @@ export function CategoriesClient({
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handleDelete(category.id)}
+                            onClick={() => handleDelete(category._id)}
                             className="bg-destructive hover:bg-destructive/90"
                           >
                             Delete
@@ -183,68 +191,15 @@ export function CategoriesClient({
         </TableBody>
       </Table>
 
-      {/* Add Category Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
-            <DialogDescription>
-              Fill in the details for the new category.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                className="col-span-3"
-                placeholder="Category Name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleAddCategory}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Category Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>
-              Update the details for the selected category.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name-edit" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name-edit"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleEditCategory}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CategoryDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        categoryName={categoryName}
+        setCategoryName={setCategoryName}
+        onSave={handleCategory}
+        selectedCategory={selectedCategory}
+      />
     </>
   );
 }

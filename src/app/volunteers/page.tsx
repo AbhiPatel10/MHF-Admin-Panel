@@ -1,56 +1,25 @@
 'use client';
 
 import * as React from 'react';
+import dayjs from "dayjs";
+import Link from 'next/link';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
+
 import { AppLayout } from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import dayjs from "dayjs";
-
-import {
-  getVolunteersApi,
-  deleteVolunteerApi,
-} from '@/services/volunteerService';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { getVolunteersApi, deleteVolunteerApi } from '@/services/volunteerService';
 import { TGetAllVolunteers } from '@/utils/types/volunteers.types';
 import { Label } from '@/components/ui/label';
 
 export default function VolunteersPage() {
   const [volunteers, setVolunteers] = React.useState<TGetAllVolunteers[] | []>([]);
   const [total, setTotal] = React.useState<number>(0);
-  // const [page, setPage] = React.useState<number>(1);
   const [offset, setOffset] = React.useState<number>(0);
   const [limit] = React.useState<number>(10);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -87,6 +56,7 @@ export default function VolunteersPage() {
         prev.filter((volunteer) => volunteer._id !== volunteerId)
       );
       setTotal((prev) => prev - 1);
+      fetchVolunteers()
     } catch (err: any) {
       alert(err.message || 'Failed to delete volunteer');
     }

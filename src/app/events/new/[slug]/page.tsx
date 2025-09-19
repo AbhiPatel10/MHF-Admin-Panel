@@ -1,24 +1,24 @@
 import { AppLayout } from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AddVolunteerForm } from '../add-volunteer-form';
+import { AddEventForm } from '../add-event-form';
 
-export default async function VolunteerEditPage({ params }: { params: { slug: string } }) {
+export default async function EventEditPage({ params }: { params: { slug: string } }) {
     const { slug } = await params;
     return (
         <AppLayout>
             <main className="p-4 md:p-6">
                 <PageHeader
-                    title="Edit Volunteer"
-                    description="Fill out the form below to add a new member to your team."
+                    title="Edit New Event"
+                    description="Fill out the form below to add a new event to the calendar."
                 />
                 <div className="grid gap-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Volunteer Details</CardTitle>
+                            <CardTitle>Event Details</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <AddVolunteerForm id={slug} />
+                            <AddEventForm id={slug} />
                         </CardContent>
                     </Card>
                 </div>
