@@ -11,9 +11,23 @@ export interface TBlog {
     isActive: boolean
     isDelete: boolean
     createdAt: string
+    updatedAt: string,
+    image: image
+    __v: number
+}
+
+interface image {
+    _id: string
+    url: string
+    publicId: string
+    altText: string
+    mimeType: string
+    createdOn: string
+    createdAt: string
     updatedAt: string
     __v: number
 }
+
 
 export interface Category {
     _id: string
@@ -47,7 +61,7 @@ export interface TCreateBlogPayload {
     title: string;
     category: string;
     image?: string;
-    content: object;
+    content?: any;
     isDraft?: boolean;
 }
 
@@ -55,7 +69,7 @@ export interface TUpdateBlogPayload {
     title: string;
     category: string;
     image?: string;
-    content: object;
+    content: any;
     isDraft?: boolean;
 }
 

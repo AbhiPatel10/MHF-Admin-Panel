@@ -1,9 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import * as React from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -11,43 +21,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { EditorClient } from "./editor-client";
 import {
   createBlogApi,
   updateBlogApi,
   getBlogByIdApi,
   TCreateBlogPayload,
-  TUpdateBlogPayload,
 } from "@/services/blog.service";
-import { useToast } from "@/hooks/use-toast";
-import { OutputData } from "@editorjs/editorjs";
 import { getAllActiveCategoriesApi } from "@/services/categoryService";
+import { OutputData } from "@editorjs/editorjs";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { uploadImageApi } from "@/services/image.service";
+import { title } from "process";
+
+const blogFormSchema = z.object({
+  title: z.string().min(2, { message: "Title must be at least 2 characters." }),
+  category: z.string().min(1, { message: "Category is required." }),
+  content: z.any().optional(),
+  image: z.any().optional(),
+});
+
+type BlogFormValues = z.infer<typeof blogFormSchema>;
 
 type Category = {
   _id: string;
   name: string;
 };
 
-interface EditBlogFormProps {
+interface BlogFormProps {
   id?: string;
 }
 
-export default function BlogForm({ id }: EditBlogFormProps) {
+export default function BlogForm({ id }: BlogFormProps) {
   const { toast } = useToast();
+  const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [content, setContent] = useState<OutputData>();
-  const [loading, setLoading] = useState<"draft" | "publish" | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [fetching, setFetching] = useState(false);
-  const [isEdited, setIsEdited] = useState(false);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [fetching, setFetching] = React.useState(false);
+  const [loading, setLoading] = React.useState<"draft" | "publish" | null>(
+    null
+  );
+  const [isEdited, setIsEdited] = React.useState(false);
 
   const isEdit = !!id;
+  const form = useForm<BlogFormValues>({
+    resolver: zodResolver(blogFormSchema),
+    defaultValues: {
+      title: "",
+      category: "",
+      content: undefined,
+    },
+  });
 
-  // ✅ Fetch categories
-  useEffect(() => {
+  const { control, handleSubmit, setValue, reset, watch } = form;
+  const content = watch("content");
+
+  // Fetch categories
+  React.useEffect(() => {
+    setIsEdited(false);
     const fetchCategories = async () => {
       try {
         setFetching(true);
@@ -67,19 +101,18 @@ export default function BlogForm({ id }: EditBlogFormProps) {
     fetchCategories();
   }, [toast]);
 
-  // ✅ Fetch blog details in edit mode
-  useEffect(() => {
+  // Fetch blog details if editing
+  React.useEffect(() => {
     if (!isEdit) return;
     const fetchBlog = async () => {
       try {
         const res = await getBlogByIdApi(id!);
         const blog = res.data;
-        setTitle(blog.title);
-        setCategory(blog.category._id);
-        setContent(blog.content);
-        setTimeout(() => {
-          setIsEdited(true);
-        }, 200);
+        form.setValue("title", blog.title);
+        form.setValue("content", blog.content);
+        form.setValue("category", blog.category._id);
+        if (blog.image?.url) setPhotoPreview(blog.image?.url);
+        setTimeout(() => setIsEdited(true), 300);
       } catch (error: any) {
         toast({
           title: "Error",
@@ -90,11 +123,10 @@ export default function BlogForm({ id }: EditBlogFormProps) {
       }
     };
     fetchBlog();
-  }, [id, isEdit, toast]);
+  }, [id, isEdit, reset, toast, categories, form]);
 
-  // ✅ Handle create or update
-  const handleSubmit = async (isDraft: boolean) => {
-    if (!title || !category || !content) {
+  const onSubmit = async (values: BlogFormValues, isDraft: boolean) => {
+    if (!values.title || !values.category || !values.content) {
       toast({
         title: "Missing fields",
         description: "Please fill in all required fields before saving.",
@@ -105,13 +137,19 @@ export default function BlogForm({ id }: EditBlogFormProps) {
 
     try {
       setLoading(isDraft ? "draft" : "publish");
+      let imageId: string | undefined;
 
+      // upload image if file selected
+      if (values.image instanceof File) {
+        const uploadRes = await uploadImageApi(values.image);
+        imageId = uploadRes.data._id;
+      }
       if (isEdit) {
-        // 🔄 Update
-        const payload: TUpdateBlogPayload = {
-          title,
-          category,
-          content,
+        const payload = {
+          ...(imageId && { image: imageId }),
+          title: values.title,
+          category: values.category,
+          content: values.content,
           isDraft,
         };
         const res = await updateBlogApi(id, payload);
@@ -122,11 +160,11 @@ export default function BlogForm({ id }: EditBlogFormProps) {
           });
         }
       } else {
-        // ➕ Create
         const payload: TCreateBlogPayload = {
-          title,
-          category,
-          content,
+          ...(imageId && { image: imageId }),
+          title: values.title,
+          category: values.category,
+          content: values.content,
           isDraft,
         };
         const res = await createBlogApi(payload);
@@ -137,9 +175,7 @@ export default function BlogForm({ id }: EditBlogFormProps) {
               ? "Blog saved as draft successfully!"
               : "Blog published successfully!",
           });
-          setTitle("");
-          setCategory("");
-          setContent(undefined);
+          reset();
         }
       }
     } catch (error: any) {
@@ -153,91 +189,171 @@ export default function BlogForm({ id }: EditBlogFormProps) {
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      form.setValue("image", file);
+    }
+  };
+
   return (
-    <>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="title">Post Title</Label>
-          <Input
-            id="title"
-            placeholder="Enter a catchy title"
-            className="text-lg"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger id="category">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {fetching ? (
-                <SelectItem value="loading" disabled>
-                  Loading...
-                </SelectItem>
-              ) : categories.length > 0 ? (
-                categories.map((cat) => (
-                  <SelectItem key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  No categories available
-                </SelectItem>
+    <Form {...form}>
+      <form className="space-y-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          <div className="space-y-8 md:col-span-2">
+            <FormField
+              control={control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Post Title</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter a catchy title"
+                      {...field}
+                      className="text-lg"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </SelectContent>
-          </Select>
+            />
+            <FormField
+              control={control}
+              name="content"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Post Content</FormLabel>
+                  <EditorClient
+                    value={content}
+                    isEdited={isEdited}
+                    onChange={(data: OutputData) => setValue("content", data)}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="space-y-8">
+            <FormField
+              control={form.control}
+              name="image"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Featured Image</FormLabel>
+                  <Card className="flex h-48 items-center justify-center border-dashed">
+                    {photoPreview ? (
+                      <div className="relative h-full w-full">
+                        <Image
+                          src={photoPreview}
+                          alt="Featured image preview"
+                          fill
+                          className="rounded-md object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground">
+                        <Upload className="mx-auto h-12 w-12" />
+                        <p>Image Preview</p>
+                      </div>
+                    )}
+                  </Card>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={fetching}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fetching ? (
+                          <SelectItem value="loading" disabled>
+                            Loading...
+                          </SelectItem>
+                        ) : categories.length > 0 ? (
+                          categories.map((cat) => (
+                            <SelectItem key={cat._id} value={cat._id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>
+                            No categories available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
-      </div>
-      {console.log("content---", content)}
-      <div className="space-y-2">
-        <Label>Post Content</Label>
-        <EditorClient
-          onChange={setContent}
-          value={content}
-          isEdited={isEdited}
-        />
-      </div>
 
-      {/* Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          disabled={loading === "draft"}
-          onClick={() => handleSubmit(true)}
-        >
-          {loading === "draft" ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : isEdit ? (
-            "Update Draft"
-          ) : (
-            "Save as Draft"
-          )}
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            type="button"
+            disabled={loading === "draft"}
+            onClick={() => handleSubmit((data) => onSubmit(data, true))()}
+          >
+            {loading === "draft" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : isEdit ? (
+              "Update Draft"
+            ) : (
+              "Save as Draft"
+            )}
+          </Button>
 
-        <Button
-          disabled={loading === "publish"}
-          onClick={() => handleSubmit(false)}
-        >
-          {loading === "publish" ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isEdit ? "Updating..." : "Publishing..."}
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              {isEdit ? "Update Post" : "Publish Post"}
-            </>
-          )}
-        </Button>
-      </div>
-    </>
+          <Button
+            type="button"
+            disabled={loading === "publish"}
+            onClick={() => handleSubmit((data) => onSubmit(data, false))()}
+          >
+            {loading === "publish" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isEdit ? "Updating..." : "Publishing..."}
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                {isEdit ? "Update Post" : "Publish Post"}
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
