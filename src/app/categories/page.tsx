@@ -1,16 +1,9 @@
 import { AppLayout } from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { categories } from '@/lib/data';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CategoriesClient } from './categories-client';
 
 export default function CategoriesPage() {
-  const categoryData = categories;
 
   return (
     <AppLayout>
@@ -24,7 +17,7 @@ export default function CategoriesPage() {
             <CardTitle>All Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <CategoriesClient categories={categoryData} />
+            <CategoriesClient />
           </CardContent>
         </Card>
       </main>

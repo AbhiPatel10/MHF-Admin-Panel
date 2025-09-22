@@ -105,6 +105,7 @@ export const contacts: Contact[] = [
     message:
       'Hello, I am a software developer with an interest in educational outreach. Are there any opportunities where I can use my technical skills to help teach kids about coding?',
     date: '2023-10-20',
+    status: 'Contacted',
   },
   {
     id: '2',
@@ -113,6 +114,7 @@ export const contacts: Contact[] = [
     message:
       "I'm passionate about the environment and would love to get involved in any local conservation or clean-up events you have planned.",
     date: '2023-10-18',
+    status: 'Not Contacted',
   },
   {
     id: '3',
@@ -121,6 +123,7 @@ export const contacts: Contact[] = [
     message:
       "I have a background in event planning and logistics. I'd be happy to help organize or manage any upcoming fundraising events.",
     date: '2023-10-15',
+    status: 'Contacted',
   },
   {
     id: '4',
@@ -129,24 +132,6 @@ export const contacts: Contact[] = [
     message:
       "I enjoy working with animals and would like to volunteer at a shelter or with animal rescue operations. Please let me know if you have any programs like that.",
     date: '2023-10-12',
-  },
-];
-
-export const categories: Category[] = [
-  {
-    _id: '1',
-    name: 'Fundraising',
-  },
-  {
-    _id: '2',
-    name: 'Community Outreach',
-  },
-  {
-    _id: '3',
-    name: 'Education',
-  },
-  {
-    _id: '4',
-    name: 'Environmental',
+    status: 'Not Contacted',
   },
 ];

@@ -3,34 +3,50 @@
 import * as React from 'react';
 import dayjs from "dayjs";
 import Link from 'next/link';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import {
+  Inbox, PlusCircle, Mail, Phone, Calendar,
+  Edit, Trash2
+} from 'lucide-react';
 
 import { AppLayout } from '@/components/app-layout';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Pagination, PaginationContent, PaginationItem,
+  PaginationPrevious, PaginationNext
+} from "@/components/ui/pagination";
+
 import { getVolunteersApi, deleteVolunteerApi } from '@/services/volunteerService';
 import { TGetAllVolunteers } from '@/utils/types/volunteers.types';
-import { Label } from '@/components/ui/label';
 
 export default function VolunteersPage() {
-  const [volunteers, setVolunteers] = React.useState<TGetAllVolunteers[] | []>([]);
+  const [volunteers, setVolunteers] = React.useState<TGetAllVolunteers[]>([]);
   const [total, setTotal] = React.useState<number>(0);
   const [offset, setOffset] = React.useState<number>(0);
-  const [limit] = React.useState<number>(10);
+  const [limit] = React.useState<number>(8); // grid looks better with 8 per page
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [volunteerToDelete, setVolunteerToDelete] = React.useState<TGetAllVolunteers | null>(null);
+
+  const currentPage = Math.floor(offset / limit) + 1;
+  const totalPages = Math.ceil(total / limit);
 
   // Fetch volunteers
   const fetchVolunteers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await getVolunteersApi(offset, limit);
+      const res = await getVolunteersApi(offset, limit, searchTerm); // ensure API supports search
       if (res.status === 200) {
         setVolunteers(res.data.volunteers ?? []);
         setTotal(res.data.totalCount);
@@ -46,19 +62,24 @@ export default function VolunteersPage() {
 
   React.useEffect(() => {
     fetchVolunteers();
-  }, [offset, limit]);
+  }, [offset, limit, searchTerm]);
 
   // Delete handler
   const handleDelete = async (volunteerId: string) => {
     try {
       await deleteVolunteerApi(volunteerId);
-      setVolunteers((prev) =>
-        prev.filter((volunteer) => volunteer._id !== volunteerId)
-      );
+      setVolunteers((prev) => prev.filter((v) => v._id !== volunteerId));
       setTotal((prev) => prev - 1);
-      fetchVolunteers()
+      setVolunteerToDelete(null);
+      fetchVolunteers();
     } catch (err: any) {
       alert(err.message || 'Failed to delete volunteer');
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setOffset((page - 1) * limit);
     }
   };
 
@@ -69,6 +90,12 @@ export default function VolunteersPage() {
           title="Volunteers"
           description="Manage your team of dedicated volunteers."
         >
+          <Button variant="outline" asChild>
+            <Link href="/volunteers/requests">
+              <Inbox className="mr-2" />
+              View Requests
+            </Link>
+          </Button>
           <Button asChild>
             <Link href="/volunteers/new">
               <PlusCircle className="mr-2" />
@@ -77,134 +104,154 @@ export default function VolunteersPage() {
           </Button>
         </PageHeader>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              All Volunteers {loading && '(Loading...)'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <p className="text-red-500 mb-3">{error}</p>
-            )}
-
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Occupation</TableHead>
-                  <TableHead>Birth Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {volunteers.length > 0 ? (
-                  volunteers.map((volunteer: TGetAllVolunteers) => (
-                    <TableRow key={volunteer._id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={volunteer?.image?.url}
-                              alt={volunteer?.name}
-                            />
-                            <AvatarFallback>
-                              {volunteer.name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {volunteer.name}
-                        </div>
-                      </TableCell>
-                      {/* <TableCell>{volunteer.e}</TableCell> */}
-                      <TableCell>{volunteer?.phoneNo ?? "-"}</TableCell>
-                      <TableCell>{volunteer?.occupation}</TableCell>
-                      <TableCell>{dayjs(volunteer?.birthdate).format("YYYY-MM-DD")}</TableCell>
-                      <TableCell>{<Label>{volunteer?.isActive ? "Active" : "Inactive"} </Label>}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/volunteers/new/${volunteer._id}`}>Edit</Link>
-                            </DropdownMenuItem>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem
-                                  onSelect={(e) => e.preventDefault()}
-                                  className="text-destructive"
-                                >
-                                  Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Are you sure?
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will
-                                    permanently delete the volunteer's record.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(volunteer._id)}
-                                    className="bg-destructive hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">
-                      {loading ? 'Loading...' : 'No volunteers found'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            <div className="flex justify-between items-center mt-4">
-              <p className="text-sm text-gray-500">
-                Showing {total > 0 ? offset + 1 : 0}–
-                {total > 0 ? Math.min(offset + limit, total) : 0} of {total} volunteers
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={offset === 0}
-                  onClick={() => setOffset((prev) => Math.max(prev - limit, 0))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={offset + limit >= total}
-                  onClick={() => setOffset((prev) => prev + limit)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <Input
+              placeholder="Search volunteers by name..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setOffset(0);
+              }}
+              className="max-w-sm"
+            />
           </CardContent>
         </Card>
+
+        {/* Volunteers Grid */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {volunteers.map((volunteer) => (
+            <Card key={volunteer._id} className="group flex flex-col overflow-hidden text-center">
+              <CardHeader>
+                <div className="relative mx-auto">
+                  <Avatar className="mx-auto h-24 w-24 border-4 border-background">
+                    <AvatarImage
+                      src={volunteer?.image?.url}
+                      alt={volunteer.name}
+                    />
+                    <AvatarFallback className="text-3xl">
+                      {volunteer.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <CardTitle className="mt-4 text-xl font-bold">
+                  {volunteer.name}
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="mt-auto flex-grow space-y-3">
+                {volunteer?.phoneNo && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{volunteer.phoneNo}</span>
+                  </div>
+                )}
+                {volunteer?.occupation && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span>{volunteer.occupation}</span>
+                  </div>
+                )}
+                {volunteer?.birthdate && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      Birth: {dayjs(volunteer.birthdate).format("YYYY-MM-DD")}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+
+              <CardFooter className="flex justify-center gap-2 p-4 pt-0">
+                <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button asChild variant="outline" size="icon" className="h-8 w-8">
+                    <Link href={`/volunteers/new/${volunteer._id}`}>
+                      <Edit className="h-4 w-4" />
+                    </Link>
+                  </Button>
+
+                  <AlertDialog
+                    open={!!volunteerToDelete && volunteerToDelete._id === volunteer._id}
+                    onOpenChange={(isOpen) => !isOpen && setVolunteerToDelete(null)}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setVolunteerToDelete(volunteer)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the volunteer's record.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setVolunteerToDelete(null)}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(volunteer._id)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {!loading && volunteers.length === 0 && (
+          <div className="flex min-h-[40vh] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+            <h3 className="text-2xl font-bold tracking-tight">No volunteers found</h3>
+            <p className="mt-2 text-muted-foreground">Try adjusting your search.</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currentPage - 1);
+                    }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="p-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currentPage + 1);
+                    }}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </main>
     </AppLayout>
   );

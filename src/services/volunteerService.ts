@@ -21,12 +21,13 @@ export const createVolunteerApi = async (
 // Get volunteers with pagination
 export const getVolunteersApi = async (
     offset: number = 0,
-    limit: number = 0
+    limit: number = 0,
+    search: string = ""
 ): Promise<ApiResponse<{ volunteers: TGetAllVolunteers[]; totalCount: number }>> => {
     const { data } = await axiosInstance.get<
         ApiResponse<{ volunteers: TGetAllVolunteers[]; totalCount: number }>
     >("/admin/volunteer/getAllVolunteers", {
-        params: { offset, limit },
+        params: { offset, limit, search },
     });
     return data;
 };

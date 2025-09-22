@@ -23,14 +23,6 @@ export type Event = {
   attendees: number;
 };
 
-export type Contact = {
-  id: string;
-  name: string;
-  email: string;
-  message: string;
-  date: string;
-};
-
 export type Category = {
   _id: string;
   name: string;
