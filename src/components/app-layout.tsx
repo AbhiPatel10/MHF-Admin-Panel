@@ -41,6 +41,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/blog', icon: Newspaper, label: 'Blog' },
   { href: '/volunteers', icon: Users, label: 'Volunteers' },
+  { href: '/team-members', icon: Users, label: 'Team Members' },
   { href: '/events', icon: Calendar, label: 'Events' },
   { href: '/gallery', icon: Images, label: 'Gallery' },
   { href: '/categories', icon: FolderKanban, label: 'Categories' },

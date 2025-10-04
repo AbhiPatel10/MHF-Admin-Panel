@@ -57,7 +57,6 @@ export function GalleryClient() {
 
   const totalPages = Math.ceil(totalCount / IMAGES_PER_PAGE);
 
-  console.log("---images", images);
   // 🔹 Fetch gallery images with pagination
   const fetchGalleryImages = async (page: number = 1) => {
     try {

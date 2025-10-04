@@ -42,3 +42,23 @@ export interface Image {
   _id: string
   url: string
 }
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  role: string;
+  type: 'Asset' | 'Key Member';
+  avatarUrl: string;
+  email: string;
+  phone: string;
+  joined: string;
+};
+
+export type Contact = {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  date: string;
+  status: 'Contacted' | 'Not Contacted';
+};
