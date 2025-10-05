@@ -1,39 +1,66 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { format } from 'date-fns';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { Save, Upload, CalendarIcon, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { createTeamMemberApi, getTeamMemberByIdApi, updateTeamMemberApi } from '@/services/teamMemberService';
-import { uploadImageApi } from '@/services/image.service';
-import { TCreateTeamMemberPayload, TeamMemberTypes } from '@/utils/types/teamMemberTypes';
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { format } from "date-fns";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Save, Upload, CalendarIcon, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  createTeamMemberApi,
+  getTeamMemberByIdApi,
+  updateTeamMemberApi,
+} from "@/services/teamMemberService";
+import { uploadImageApi } from "@/services/image.service";
+import {
+  TCreateTeamMemberPayload,
+  TeamMemberTypes,
+} from "@/utils/types/teamMemberTypes";
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  phoneNo: z.string().min(10, { message: 'Please enter a valid phone number.' }),
-  role: z.string().min(2, { message: 'Role is required.' }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  phoneNo: z
+    .string()
+    .min(10, { message: "Please enter a valid phone number." }),
+  role: z.string().min(2, { message: "Role is required." }),
   type: z.enum([TeamMemberTypes.ASSET, TeamMemberTypes.KEY_MEMBER]),
-  city: z.string().min(2, { message: 'City is required.' }),
-  state: z.string().min(2, { message: 'State is required.' }),
-  postalCode: z.string().min(6, { message: 'Postal code is required.' }),
+  city: z.string().min(2, { message: "City is required." }),
+  state: z.string().min(2, { message: "State is required." }),
+  postalCode: z.string().min(6, { message: "Postal code is required." }),
   bloodGroup: z.string().optional(),
   birthdate: z.date().optional(),
   skills: z.string().optional(),
   photo: z.any().optional(),
-  occupation: z.string().min(2, { message: 'Occupation is required.' }),
+  occupation: z.string().min(2, { message: "Occupation is required." }),
 });
 
 export function AddTeamMemberForm({ id }: { id?: string }) {
@@ -45,16 +72,16 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      phoneNo: '',
-      role: '',
+      name: "",
+      phoneNo: "",
+      role: "",
       type: TeamMemberTypes.ASSET,
-      city: '',
-      state: '',
-      postalCode: '',
-      bloodGroup: '',
+      city: "",
+      state: "",
+      postalCode: "",
+      bloodGroup: "",
       birthdate: undefined,
-      skills: '',
+      skills: "",
     },
   });
 
@@ -67,23 +94,26 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
         const res = await getTeamMemberByIdApi(id!);
         if (res.status === 200) {
           const data = res.data;
-          form.setValue('name', data.name);
-          form.setValue('city', data.address?.city || '');
-          form.setValue('state', data.address?.state || '');
-          form.setValue('postalCode', data.address?.postalCode || '');
-          form.setValue('phoneNo', data.phoneNo);
-          form.setValue('birthdate', data.birthdate ? new Date(data.birthdate) : undefined);
-          form.setValue('bloodGroup', data.bloodGroup || '');
-          form.setValue('occupation', data.occupation);
-          form.setValue('role', data.role);
-          form.setValue('skills', data.skills?.[0] || '');
+          form.setValue("name", data.name);
+          form.setValue("city", data.address?.city || "");
+          form.setValue("state", data.address?.state || "");
+          form.setValue("postalCode", data.address?.postalCode || "");
+          form.setValue("phoneNo", data.phoneNo);
+          form.setValue(
+            "birthdate",
+            data.birthdate ? new Date(data.birthdate) : undefined
+          );
+          form.setValue("bloodGroup", data.bloodGroup || "");
+          form.setValue("occupation", data.occupation);
+          form.setValue("role", data.role);
+          form.setValue("skills", data.skills?.[0] || "");
           if (data.image?.url) setPhotoPreview(data.image.url);
         }
       } catch (err: any) {
         toast({
-          title: 'Error',
-          description: err.message || 'Failed to fetch volunteer',
-          variant: 'destructive',
+          title: "Error",
+          description: err.message || "Failed to fetch volunteer",
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
@@ -105,9 +135,9 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
         imageId = uploadRes.data._id;
       } catch (err: any) {
         toast({
-          title: 'Error',
-          description: err?.message || 'Image upload failed',
-          variant: 'destructive',
+          title: "Error",
+          description: err?.message || "Image upload failed",
+          variant: "destructive",
         });
         setIsLoading(false);
         return;
@@ -137,24 +167,27 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
         : await createTeamMemberApi(payload);
 
       toast({
-        title: isEdit ? 'Team Member Updated!' : 'Team Member Added!',
-        description: res.message || `${values.name} has been ${isEdit ? 'updated' : 'added'}.`,
+        title: isEdit ? "Team Member Updated!" : "Team Member Added!",
+        description:
+          res.message ||
+          `${values.name} has been ${isEdit ? "updated" : "added"}.`,
       });
 
       if (!isEdit) {
         form.reset();
         setPhotoPreview(null);
       }
+      router.push("/team-members");
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err?.message || 'Something went wrong',
-        variant: 'destructive',
+        title: "Error",
+        description: err?.message || "Something went wrong",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   // Handle photo selection
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,10 +196,9 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
       const reader = new FileReader();
       reader.onloadend = () => setPhotoPreview(reader.result as string);
       reader.readAsDataURL(file);
-      form.setValue('photo', file); // store file in form state
+      form.setValue("photo", file); // store file in form state
     }
   };
-
 
   return (
     <Form {...form}>
@@ -267,7 +299,10 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
                   <FormItem>
                     <FormLabel>Role*</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Coordinator, Volunteer" {...field} />
+                      <Input
+                        placeholder="e.g., Coordinator, Volunteer"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -279,7 +314,10 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Member Type*</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a member type" />
@@ -348,8 +386,8 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
                   <FormItem>
                     <FormLabel>Blood Group</FormLabel>
                     <Select
-                      value={field.value || ''}         // ✅ Controlled value
-                      onValueChange={(val) => field.onChange(val)}  // ✅ Update form state
+                      value={field.value || ""} // ✅ Controlled value
+                      onValueChange={(val) => field.onChange(val)} // ✅ Update form state
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -357,11 +395,13 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((group) => (
-                          <SelectItem key={group} value={group}>
-                            {group}
-                          </SelectItem>
-                        ))}
+                        {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+                          (group) => (
+                            <SelectItem key={group} value={group}>
+                              {group}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -380,12 +420,16 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
                           <Button
                             variant="outline"
                             className={cn(
-                              'w-full justify-start text-left font-normal',
-                              !field.value && 'text-muted-foreground'
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -395,7 +439,7 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
                           selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                            date > new Date() || date < new Date('1900-01-01')
+                            date > new Date() || date < new Date("1900-01-01")
                           }
                           initialFocus
                         />
@@ -425,7 +469,7 @@ export function AddTeamMemberForm({ id }: { id?: string }) {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {isLoading ? 'Saving...' : isEdit ? 'Update Member' : 'Save Member'}
+            {isLoading ? "Saving..." : isEdit ? "Update Member" : "Save Member"}
           </Button>
         </div>
       </form>

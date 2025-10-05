@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Save, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { EditorClient } from "./editor-client";
+import { EditorClientProps } from "./editor-client";
 import {
   createBlogApi,
   updateBlogApi,
@@ -35,7 +35,7 @@ import { OutputData } from "@editorjs/editorjs";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { uploadImageApi } from "@/services/image.service";
-import { title } from "process";
+import dynamic from "next/dynamic";
 
 const blogFormSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -78,6 +78,18 @@ export default function BlogForm({ id }: BlogFormProps) {
 
   const { control, handleSubmit, setValue, reset, watch } = form;
   const content = watch("content");
+
+  const EditorClient = dynamic<EditorClientProps>(
+    () => import("./editor-client").then((mod) => mod.EditorClient), // Extract named export
+    {
+      ssr: false, // Disable SSR
+      loading: () => (
+        <div className="p-4 text-center text-muted-foreground">
+          Loading editor...
+        </div>
+      ), // Fallback UI (React component or function returning one)
+    }
+  );
 
   // Fetch categories
   React.useEffect(() => {

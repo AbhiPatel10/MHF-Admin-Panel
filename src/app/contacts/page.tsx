@@ -1,13 +1,8 @@
-import { AppLayout } from '@/components/app-layout';
-import { PageHeader } from '@/components/page-header';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { contacts } from '@/lib/data';
-import { ContactsClient } from './contacts-client';
+import { AppLayout } from "@/components/app-layout";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { contacts } from "@/lib/data";
+import { ContactsClient } from "./contacts-client";
 
 export default function ContactsPage() {
   // In a real app, you would fetch this data from a database
@@ -25,7 +20,7 @@ export default function ContactsPage() {
             <CardTitle>Inbox</CardTitle>
           </CardHeader>
           <CardContent>
-            <ContactsClient contacts={contactData} />
+            <ContactsClient />
           </CardContent>
         </Card>
       </main>

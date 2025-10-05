@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -15,28 +15,33 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Loader2, Save, Upload } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
-import { Card } from '@/components/ui/card';
-import { uploadImageApi } from '@/services/image.service';
-import { EditorClient } from '@/app/blog/new/editor-client';
-import { createEventApi, getEventByIdApi, updateEventApi } from '@/services/eventService';
-import { useRouter } from 'next/navigation';
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Loader2, Save, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { uploadImageApi } from "@/services/image.service";
+import { EditorClientProps } from "@/app/blog/new/editor-client";
+import {
+  createEventApi,
+  getEventByIdApi,
+  updateEventApi,
+} from "@/services/eventService";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  category: z.string().min(2, { message: 'Category is required.' }),
-  date: z.date({ required_error: 'Event date is required.' }),
-  location: z.string().min(3, { message: 'Location is required.' }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  category: z.string().min(2, { message: "Category is required." }),
+  date: z.date({ required_error: "Event date is required." }),
+  location: z.string().min(3, { message: "Location is required." }),
   image: z.any().optional(),
   description: z.any().optional(), // Editor.js JSON
 });
@@ -54,18 +59,30 @@ export function AddEventForm({ id }: AddEventFormProps) {
   const isEdit = !!id;
   const router = useRouter();
 
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      category: '',
-      location: '',
+      name: "",
+      category: "",
+      location: "",
       date: undefined,
       image: undefined,
       description: undefined,
     },
   });
+
+  const EditorClient = dynamic<EditorClientProps>(
+    () =>
+      import("../../blog/new/editor-client").then((mod) => mod.EditorClient), // Extract named export
+    {
+      ssr: false, // Disable SSR
+      loading: () => (
+        <div className="p-4 text-center text-muted-foreground">
+          Loading editor...
+        </div>
+      ), // Fallback UI (React component or function returning one)
+    }
+  );
 
   // Prefill form if editing
   React.useEffect(() => {
@@ -77,26 +94,25 @@ export function AddEventForm({ id }: AddEventFormProps) {
         const res = await getEventByIdApi(id!);
         if (res.status === 200) {
           const data = res.data;
-          form.setValue('name', data.name);
-          form.setValue('category', data.category);
-          form.setValue('location', data.location);
+          form.setValue("name", data.name);
+          form.setValue("category", data.category);
+          form.setValue("location", data.location);
           if (data.date) {
-            form.setValue('date', new Date(data.date));
+            form.setValue("date", new Date(data.date));
           } else {
-            form.resetField('date');
+            form.resetField("date");
           }
           if (data.image?.url) setPhotoPreview(data.image?.url);
           if (data.description) setEditorData(data.description);
           setInterval(() => {
             setIsEdited(true);
-
           }, 200);
         }
       } catch (err: any) {
         toast({
-          title: 'Error',
-          description: err.message || 'Failed to fetch event',
-          variant: 'destructive',
+          title: "Error",
+          description: err.message || "Failed to fetch event",
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
@@ -121,7 +137,7 @@ export function AddEventForm({ id }: AddEventFormProps) {
       name: values.name,
       category: values.category,
       location: values.location,
-      date: values.date ? values.date.toISOString() : '', // Ensure date is always a string
+      date: values.date ? values.date.toISOString() : "", // Ensure date is always a string
       description: editorData, // editor js json
     };
 
@@ -132,10 +148,10 @@ export function AddEventForm({ id }: AddEventFormProps) {
 
       if (res.status === 200) {
         toast({
-          title: isEdit ? 'Event Updated!' : 'Event Created!',
+          title: isEdit ? "Event Updated!" : "Event Created!",
           description:
             res.message ||
-            `${values.name} has been ${isEdit ? 'updated' : 'created'}.`,
+            `${values.name} has been ${isEdit ? "updated" : "created"}.`,
         });
         if (!isEdit) {
           form.reset();
@@ -144,17 +160,17 @@ export function AddEventForm({ id }: AddEventFormProps) {
         }
       } else {
         toast({
-          title: 'Error',
-          description: res.message || 'Operation failed',
-          variant: 'destructive',
+          title: "Error",
+          description: res.message || "Operation failed",
+          variant: "destructive",
         });
       }
       router.back();
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.message || 'Something went wrong',
-        variant: 'destructive',
+        title: "Error",
+        description: err.message || "Something went wrong",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -169,7 +185,7 @@ export function AddEventForm({ id }: AddEventFormProps) {
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      form.setValue('image', file);
+      form.setValue("image", file);
     }
   };
   return (
@@ -239,7 +255,6 @@ export function AddEventForm({ id }: AddEventFormProps) {
                 onChange={(data) => setEditorData(data)}
                 isEdited={isEdited}
               />
-
             </div>
           </div>
 
@@ -271,15 +286,15 @@ export function AddEventForm({ id }: AddEventFormProps) {
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
-                          variant={'outline'}
+                          variant={"outline"}
                           className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !field.value && 'text-muted-foreground'
+                            "w-full justify-start text-left font-normal",
+                            !field.value && "text-muted-foreground"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {field.value ? (
-                            format(field.value, 'PPP')
+                            format(field.value, "PPP")
                           ) : (
                             <span>Pick a date</span>
                           )}
@@ -328,11 +343,7 @@ export function AddEventForm({ id }: AddEventFormProps) {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {isLoading
-              ? 'Saving...'
-              : isEdit
-                ? 'Update Event'
-                : 'Save Event'}
+            {isLoading ? "Saving..." : isEdit ? "Update Event" : "Save Event"}
           </Button>
         </div>
       </form>

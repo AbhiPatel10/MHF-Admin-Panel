@@ -1,9 +1,13 @@
-import { AppLayout } from '@/components/app-layout';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AddTeamMemberForm } from '../add-team-member-form';
+import { AppLayout } from "@/components/app-layout";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AddTeamMemberForm } from "../add-team-member-form";
 
-export default async function NewTeamMemberPage({ params }: { params: { slug: string } }) {
+export default async function NewTeamMemberPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   return (
     <AppLayout>

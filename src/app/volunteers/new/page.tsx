@@ -1,10 +1,13 @@
-import { AppLayout } from '@/components/app-layout';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AddVolunteerForm } from './add-volunteer-form';
+import { AppLayout } from "@/components/app-layout";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AddVolunteerForm } from "./add-volunteer-form";
 
-export default function NewVolunteerPage({ params }: { params: { slug: string } }) {
-
+export default function NewVolunteerPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   return (
     <AppLayout>
       <main className="p-4 md:p-6">

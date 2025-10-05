@@ -8,7 +8,7 @@ import BlogForm from "../blog-form";
 export default async function EditPostPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
 
