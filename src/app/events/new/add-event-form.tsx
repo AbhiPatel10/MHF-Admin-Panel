@@ -7,21 +7,9 @@ import * as z from "zod";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, Save, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -29,11 +17,7 @@ import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { uploadImageApi } from "@/services/image.service";
 import { EditorClientProps } from "@/app/blog/new/editor-client";
-import {
-  createEventApi,
-  getEventByIdApi,
-  updateEventApi,
-} from "@/services/eventService";
+import { createEventApi, getEventByIdApi, updateEventApi } from "@/services/eventService";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -49,6 +33,19 @@ const formSchema = z.object({
 interface AddEventFormProps {
   id?: string;
 }
+
+const EditorClient = dynamic<EditorClientProps>(
+  () =>
+    import("../../blog/new/editor-client").then((mod) => mod.EditorClient), // Extract named export
+  {
+    ssr: false, // Disable SSR
+    loading: () => (
+      <div className="p-4 text-center text-muted-foreground">
+        Loading editor...
+      </div>
+    ), // Fallback UI (React component or function returning one)
+  }
+);
 
 export function AddEventForm({ id }: AddEventFormProps) {
   const { toast } = useToast();
@@ -70,19 +67,6 @@ export function AddEventForm({ id }: AddEventFormProps) {
       description: undefined,
     },
   });
-
-  const EditorClient = dynamic<EditorClientProps>(
-    () =>
-      import("../../blog/new/editor-client").then((mod) => mod.EditorClient), // Extract named export
-    {
-      ssr: false, // Disable SSR
-      loading: () => (
-        <div className="p-4 text-center text-muted-foreground">
-          Loading editor...
-        </div>
-      ), // Fallback UI (React component or function returning one)
-    }
-  );
 
   // Prefill form if editing
   React.useEffect(() => {

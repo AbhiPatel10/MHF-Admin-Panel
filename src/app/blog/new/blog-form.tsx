@@ -5,31 +5,13 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EditorClientProps } from "./editor-client";
-import {
-  createBlogApi,
-  updateBlogApi,
-  getBlogByIdApi,
-  TCreateBlogPayload,
-} from "@/services/blog.service";
+import { createBlogApi, updateBlogApi, getBlogByIdApi, TCreateBlogPayload } from "@/services/blog.service";
 import { getAllActiveCategoriesApi } from "@/services/categoryService";
 import { OutputData } from "@editorjs/editorjs";
 import Image from "next/image";
@@ -55,6 +37,18 @@ interface BlogFormProps {
   id?: string;
 }
 
+const EditorClient = dynamic<EditorClientProps>(
+  () => import("./editor-client").then((mod) => mod.EditorClient), // Extract named export
+  {
+    ssr: false, // Disable SSR
+    loading: () => (
+      <div className="p-4 text-center text-muted-foreground">
+        Loading editor...
+      </div>
+    ), // Fallback UI (React component or function returning one)
+  }
+);
+
 export default function BlogForm({ id }: BlogFormProps) {
   const { toast } = useToast();
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
@@ -78,18 +72,6 @@ export default function BlogForm({ id }: BlogFormProps) {
 
   const { control, handleSubmit, setValue, reset, watch } = form;
   const content = watch("content");
-
-  const EditorClient = dynamic<EditorClientProps>(
-    () => import("./editor-client").then((mod) => mod.EditorClient), // Extract named export
-    {
-      ssr: false, // Disable SSR
-      loading: () => (
-        <div className="p-4 text-center text-muted-foreground">
-          Loading editor...
-        </div>
-      ), // Fallback UI (React component or function returning one)
-    }
-  );
 
   // Fetch categories
   React.useEffect(() => {
